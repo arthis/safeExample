@@ -1,3 +1,4 @@
+open System
 open System.IO
 open System.Threading.Tasks
 
@@ -7,6 +8,8 @@ open FSharp.Control.Tasks.V2
 open Giraffe
 open Saturn
 open Shared
+
+
 
 
 let publicPath = Path.GetFullPath "../Client/public"
@@ -20,9 +23,16 @@ let webApp = router {
             let! counter = getInitCounter()
             return! Successful.OK counter next ctx
         })
-    get "/onHelmDeploymentReleased" (fun next ctx ->
-        task {
-            return! Successful.OK "Yep" next ctx
+    get "/api/getContainers" (fun next ctx ->
+        task { 
+            let c = [|
+                { Container.Initial with name="xxxx" }
+                { Container.Initial with name="yyyy" }
+                { Container.Initial with name="zzzzzz" }
+                { Container.Initial with name="tttttttttt" }
+            |]
+            
+            return! Successful.OK c  next ctx
     })
 }
 

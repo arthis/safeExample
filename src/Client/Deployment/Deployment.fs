@@ -19,7 +19,7 @@ open ClientHelpers
 
 
 type DeploymentTypeView =
-    | DeployContainerView
+    | DeployApplicationView
     | DeployProductView
     | DeployAddressingView
     | DeployFullNamespaceView
@@ -30,29 +30,35 @@ type DeploymentTypeView =
 // we mark it as optional, because initially it will not be available from the client
 // the initial value will be requested from server
 type Model = { 
- CurrentView : DeploymentTypeView option
+    CurrentView : DeploymentTypeView option
+    DeploymentApplicationState : DeployApplication.Model option
 }
 
-type Msg =
-| ShowDeployContainer
+type DeploymentViewMsg =
+| ShowDeployApplication
 | ShowDeployProduct
 | ShowDeployAddressing
 | ShowDeployFullNamespace
+| DeployProduct of DeployProduct.DeployProductMsg
+| DeployApplication of DeployApplication.DeployApplicationMsg
 
 let init () : Model =
     let initialModel = { 
         CurrentView = None
+        DeploymentApplicationState = None
     }
     initialModel
 
 
-let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> = 
+let update (msg : DeploymentViewMsg) (currentModel : Model) : Model * Cmd<DeploymentViewMsg> = 
     match msg with 
-    | ShowDeployContainer ->
+    | ShowDeployApplication ->
+        let state, subCmd = DeployApplication.init()
+        printf "ShowDeployApplication"
         let nextModel = { 
-            currentModel with CurrentView = Some DeployContainerView 
+            currentModel with CurrentView = Some DeployApplicationView ;  DeploymentApplicationState=Some(state) ;
         }
-        nextModel, Cmd.none
+        nextModel, Cmd.map DeploymentViewMsg.DeployApplication subCmd
     | ShowDeployProduct ->
         let nextModel = { 
             currentModel with CurrentView = Some DeployProductView
@@ -71,7 +77,16 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     | _ -> currentModel, Cmd.none
 
 
-let view (model : Model) (dispatch : Msg -> unit) =
+let showView (model : Model) dispatch =
+    match model.CurrentView, model.DeploymentApplicationState with
+    | Some ( DeployApplicationView), Some(state) -> 
+        DeployApplication.view state ( DeploymentViewMsg.DeployApplication >> dispatch)
+    | Some ( DeployProductView),_ -> 
+        let state, subCmd = DeployProduct.init()
+        DeployProduct.view state ( DeploymentViewMsg.DeployProduct >> dispatch)        
+    | _ -> [] 
+
+let view (model : Model) dispatch =
     [
         Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Left) ] ]
             [ 
@@ -80,9 +95,14 @@ let view (model : Model) (dispatch : Msg -> unit) =
 
         Columns.columns []
             [ 
-                Column.column [] [ button "deploy container" (fun _ -> dispatch ShowDeployContainer) ]
+                Column.column [] [ button "deploy application" (fun _ -> dispatch ShowDeployApplication) ]
                 Column.column [] [ button "deploy product" (fun _ -> dispatch ShowDeployProduct) ]
                 Column.column [] [ button "deploy Addressing" (fun _ -> dispatch ShowDeployAddressing) ]
                 Column.column [] [ button "deploy FullNamespace" (fun _ -> dispatch ShowDeployFullNamespace) ]
             ] 
+
+        Content.content [] <| showView model dispatch             
+
+
+
     ]

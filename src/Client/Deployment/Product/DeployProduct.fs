@@ -7,6 +7,7 @@ open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Fable.PowerPack.Fetch
 
+
 open Thoth.Json
 
 open Shared
@@ -27,7 +28,7 @@ type Model = {
 
 // The Msg type defines what events/actions can occur while the application is running
 // the state of the application changes *only* in reaction to these events
-type Msg =
+type DeployProductMsg =
 | DeployProduct
 | CancelDeployProduct
 | InitialProductLoaded of Result<Product list, exn>
@@ -35,7 +36,7 @@ type Msg =
 let initialProduct = fetchAs<Product list> "/api/getProducts" (Decode.Auto.generateDecoder())
 
 // defines the initial state and initial command (= side-effect) of the application
-let init () : Model * Cmd<Msg> =
+let init () : Model * Cmd<DeployProductMsg> =
     let initialModel = { 
         Products = None 
         Product = None
@@ -51,7 +52,7 @@ let init () : Model * Cmd<Msg> =
 // The update function computes the next state of the application based on the current state and the incoming events/messages
 // It can also run side-effects (encoded as commands) like calling the server via Http.
 // these commands in turn, can dispatch messages to which the update function will react.
-let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
+let update (msg : DeployProductMsg) (currentModel : Model) : Model * Cmd<DeployProductMsg> =
     match currentModel.Products, msg with
     | _, InitialProductLoaded (Ok products)->
         let nextModel = { 
@@ -65,12 +66,40 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
         currentModel, Cmd.none
     | _ -> currentModel, Cmd.none
 
+let basic () =
+    Dropdown.dropdown [ Dropdown.IsHoverable ]
+        [ div [ ]
+            [ Button.button [ ]
+                [ span [ ]
+                    [ str "Dropdown" ]
+                  Icon.icon [ Icon.Size IsSmall ]
+                    [ ] ] ]
+          Dropdown.menu [ ]
+            [ Dropdown.content [ ]
+                [ Dropdown.Item.a [ ]
+                    [ str "Item n°1" ]
+                  Dropdown.Item.a [ ]
+                    [ str "Item n°2" ]
+                  Dropdown.Item.a [ Dropdown.Item.IsActive true ]
+                    [ str "Item n°3" ]
+                  Dropdown.Item.a [ ]
+                    [ str "Item n°4" ]
+                //   Dropdown.divider [ ]
+                  Dropdown.Item.a [ ]
+                    [ str "Item n°5" ] ] ] ]    
 
+let view (model : Model) dispatch =
+    [
+        Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Left) ] ]
+            [ 
+                Heading.h3 [] [ str ("Deploy Product: ") ] 
+            ] 
 
-let mainView (model : Model) (dispatch : Msg -> unit) =
-    [ 
+        Columns.columns []
+            [ 
+                basic()
+            ] 
+                
     ]
-
-let view (model : Model) (dispatch : Msg -> unit) = []
           
 
