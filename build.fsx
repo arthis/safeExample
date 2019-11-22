@@ -14,6 +14,7 @@ open Fake.IO
 
 let serverPath = Path.getFullName "./src/Server"
 let clientPath = Path.getFullName "./src/Client"
+let serverTestPath = Path.getFullName "./src/Tests/Server"
 let deployDir = Path.getFullName "./deploy"
 
 let platformTool tool winTool =
@@ -74,10 +75,24 @@ Target.create "Build" (fun _ ->
     runDotNet "fable webpack-cli -- --config src/Client/webpack.config.js -p" clientPath
 )
 
+Target.create "Test" (fun _ ->
+
+    let serverTests = async {
+        runDotNet "watch run" serverTestPath
+    }
+
+
+    [ serverTests ]
+    |> Async.Parallel
+    |> Async.RunSynchronously
+    |> ignore
+)
+
 Target.create "Run" (fun _ ->
     let server = async {
         runDotNet "watch run" serverPath
     }
+
     let client = async {
         runDotNet "fable webpack-dev-server -- --config src/Client/webpack.config.js" clientPath
     }
@@ -86,7 +101,7 @@ Target.create "Run" (fun _ ->
         openBrowser "http://localhost:8080"
     }
 
-    [ server; client; browser ]
+    [ server; client; browser; ]
     |> Async.Parallel
     |> Async.RunSynchronously
     |> ignore

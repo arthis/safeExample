@@ -1,4 +1,4 @@
-module DeploymentView
+module Livingstone.DeploymentSection
 
 
 open Elmish
@@ -10,7 +10,7 @@ open Fable.PowerPack.Fetch
 
 open Thoth.Json
 
-open Shared
+open Livingstone.Shared
 
 
 open Fulma
@@ -25,13 +25,12 @@ type DeploymentTypeView =
     | DeployFullNamespaceView
 
 
-// The model holds data that you want to keep track of while the application is running
-// in this case, we are keeping track of a counter
-// we mark it as optional, because initially it will not be available from the client
-// the initial value will be requested from server
+
 type Model = { 
     CurrentView : DeploymentTypeView option
-    DeploymentApplicationState : DeployApplication.Model option
+    DeploymentApplicationState : Deployment.Application.Types.Model option
+    DeploymentProductState : Deployment.Product.Types.Model option
+
 }
 
 type DeploymentViewMsg =
@@ -39,31 +38,56 @@ type DeploymentViewMsg =
 | ShowDeployProduct
 | ShowDeployAddressing
 | ShowDeployFullNamespace
-| DeployProduct of DeployProduct.DeployProductMsg
-| DeployApplication of DeployApplication.DeployApplicationMsg
+| DeployProduct of Deployment.Product.Types.DeployProductMsg
+| DeployApplication of Deployment.Application.Types.DeployApplicationMsg
 
-let init () : Model =
+
+
+
+let init () =
     let initialModel = { 
         CurrentView = None
         DeploymentApplicationState = None
+        DeploymentProductState= None
     }
-    initialModel
+
+    initialModel,Cmd.none
 
 
 let update (msg : DeploymentViewMsg) (currentModel : Model) : Model * Cmd<DeploymentViewMsg> = 
     match msg with 
     | ShowDeployApplication ->
-        let state, subCmd = DeployApplication.init()
-        printf "ShowDeployApplication"
-        let nextModel = { 
-            currentModel with CurrentView = Some DeployApplicationView ;  DeploymentApplicationState=Some(state) ;
-        }
-        nextModel, Cmd.map DeploymentViewMsg.DeployApplication subCmd
+        let state, subCmd = Deployment.Application.State.init()
+        let nextModel = {  
+            currentModel with 
+                CurrentView = Some DeployApplicationView ;  
+                DeploymentApplicationState= Some(state) ; 
+                DeploymentProductState = None;
+        }   
+        nextModel, Cmd.map DeployApplication subCmd
     | ShowDeployProduct ->
+        let state, subCmd = Deployment.Product.State.init()
         let nextModel = { 
-            currentModel with CurrentView = Some DeployProductView
+            currentModel with 
+                CurrentView = Some DeployProductView
+                DeploymentApplicationState= None ; 
+                DeploymentProductState = Some(state);
         }
-        nextModel, Cmd.none    
+        nextModel, Cmd.map DeployProduct subCmd    
+    | DeployApplication   cmd  ->
+        let newModel,subCmd =
+            match currentModel.DeploymentApplicationState with 
+            | Some (m) -> Deployment.Application.State.update cmd m
+            | None -> Deployment.Application.State.init() 
+        { currentModel with  DeploymentApplicationState= Some newModel }, Cmd.map DeployApplication subCmd
+    | DeployProduct  cmd  ->
+        printf "Deployment DeployProduct %A" cmd
+        let newModel,subCmd =
+            match currentModel.DeploymentProductState with 
+            | Some (m) -> Deployment.Product.State.update cmd m
+            | None -> Deployment.Product.State.init() 
+        { currentModel with  DeploymentProductState= Some newModel }, Cmd.map DeployProduct subCmd        
+    
     | ShowDeployAddressing ->
         let nextModel = { 
             currentModel with CurrentView = Some DeployAddressingView
@@ -74,16 +98,15 @@ let update (msg : DeploymentViewMsg) (currentModel : Model) : Model * Cmd<Deploy
             currentModel with CurrentView = Some DeployFullNamespaceView
         }
         nextModel, Cmd.none            
-    | _ -> currentModel, Cmd.none
+
 
 
 let showView (model : Model) dispatch =
-    match model.CurrentView, model.DeploymentApplicationState with
-    | Some ( DeployApplicationView), Some(state) -> 
-        DeployApplication.view state ( DeploymentViewMsg.DeployApplication >> dispatch)
-    | Some ( DeployProductView),_ -> 
-        let state, subCmd = DeployProduct.init()
-        DeployProduct.view state ( DeploymentViewMsg.DeployProduct >> dispatch)        
+    match model.CurrentView, model.DeploymentApplicationState, model.DeploymentProductState with
+    | Some ( DeployApplicationView), Some(state),_ -> 
+        Deployment.Application.View.view state ( DeploymentViewMsg.DeployApplication >> dispatch)
+    | Some ( DeployProductView),_ ,Some(state) -> 
+        Deployment.Product.View.view state ( DeploymentViewMsg.DeployProduct >> dispatch)        
     | _ -> [] 
 
 let view (model : Model) dispatch =

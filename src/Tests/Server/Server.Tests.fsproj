@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="versionRange.tests.fs" />
+    <Compile Include="product.tests.fs" />
+    <Compile Include="application.tests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Server\Server.fsproj">
+      <Name>Server.fsproj</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- extends watching group to include *.js files -->
+    <Watch Include="..\..\Server\**\*" Exclude="..\..\Server\obj\**\*;..\..\Server\bin\**\*;obj\**\*;bin\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Expecto" Version="7.0.0" />
+    <PackageReference Include="Expecto.BenchmarkDotNet" Version="7.0.0" />
+    <PackageReference Include="Expecto.FsCheck" Version="7.0.0" />
+    <PackageReference Include="Expecto.VisualStudio.TestAdapter" Version="8.0.0" />
+  </ItemGroup>
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+</Project>

@@ -1,0 +1,14 @@
+kind: projectDefinition
+apiversionn: v1
+
+applicationId: 6f54546f-da07-42b8-bdf5-a2668c6002b4
+dependencies:
+    - applicationName: iv-da
+      ref: ^1.0.2
+    - applicationName: iv-bff
+      ref: Tag(toto)
+    - applicationName: iv-spa
+      ref: feature/myfeature
+ciDependencies:
+    - applicationName: svc-translation
+      ref: ^1.1

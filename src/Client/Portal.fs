@@ -1,4 +1,4 @@
-module Portal
+module Livingstone.Portal
 
 open Elmish
 open Elmish.React
@@ -6,36 +6,33 @@ open Elmish.React
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Fable.PowerPack.Fetch
+open Fulma
+open System.Collections.Generic
 
 open Thoth.Json
 
-open Shared
-
-
-open Fulma
-open System.Collections.Generic
-open ClientHelpers
+open Livingstone.Shared
+open Livingstone.ClientHelpers
+open Livingstone.Administration.Product.Types
 
 type PortalView =
-| DeploymentView of DeploymentView.Model
-| ProductAdministrationView
+| DeploymentView of DeploymentSection.Model
+| AdministrationView of AdministrationSection.Model
 
 
-
-// The model holds data that you want to keep track of while the application is running
-// in this case, we are keeping track of a counter
-// we mark it as optional, because initially it will not be available from the client
-// the initial value will be requested from server
 type Model = { 
     CurrentPortal : PortalView option
 }
 
-// The Msg type defines what events/actions can occur while the application is running
-// the state of the application changes *only* in reaction to these events
+
 type PortalMsg =
 | ShowDeployment
 | ShowAdministration
-| DeployView of DeploymentView.DeploymentViewMsg
+| DeployView of DeploymentSection.DeploymentViewMsg
+| AdminView of AdministrationSection.AdministrationViewMsg
+
+
+
 
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<PortalMsg> =
@@ -51,72 +48,57 @@ let init () : Model * Cmd<PortalMsg> =
 let update (msg : PortalMsg) (currentModel : Model) : Model * Cmd<PortalMsg> =
     match  msg with
     | ShowDeployment ->
+        let model,subCmd = DeploymentSection.init()
         let nextModel = { 
-            currentModel with CurrentPortal = Some <| DeploymentView(DeploymentView.init())
+            currentModel with CurrentPortal = Some <| DeploymentView model
         }
-        nextModel, Cmd.none
+        nextModel, Cmd.map DeployView  subCmd
     | ShowAdministration ->
+        let model,subCmd = AdministrationSection.init()
         let nextModel = { 
-            currentModel with CurrentPortal = Some ProductAdministrationView
+            currentModel with CurrentPortal = Some <|  AdministrationView model
         }
-        nextModel, Cmd.none
+        nextModel,  Cmd.map AdminView  subCmd
     | DeployView msg' ->
-        let res, cmd = 
+        let res, cmd =  
             match currentModel.CurrentPortal with
-            | Some(DeploymentView(m)) -> DeploymentView.update msg' m
-            | _ -> DeploymentView.init(), Cmd.none
+            | Some(DeploymentView(m)) -> DeploymentSection.update msg' m
+            | _ -> DeploymentSection.init()
         { currentModel with CurrentPortal = Some(DeploymentView(res)) }, Cmd.map DeployView cmd
-    // | _ -> currentModel, Cmd.none
+    | AdminView msg' ->
+        let res, cmd =  
+            match currentModel.CurrentPortal with
+            | Some(AdministrationView(m)) -> AdministrationSection.update msg' m
+            | _ -> AdministrationSection.init()
+        { currentModel with CurrentPortal = Some(AdministrationView(res)) }, Cmd.map AdminView cmd        
+    | _ -> currentModel, Cmd.none
 
 
 let safeComponents =
     [
-        p [] [img [ Src "/Images/livingstone.png"; Style [ Width(100) ] ]]
-        p [ ] [  strong [] [ str "Living Stone" ]]
+        // p [] [img [ Src "/Images/livingstone.png"; Style [ Width(100) ] ]]
+        // p [ ] [  strong [] [ str "Living Stone" ]]
     ]
     
-        
-   
-
-
 let showPortal (model : Model) dispatch =
     match model.CurrentPortal with
     | Some ( DeploymentView( m)) -> 
-        DeploymentView.view m ( PortalMsg.DeployView >> dispatch)
-    | Some ProductAdministrationView -> []
+        DeploymentSection.view m ( PortalMsg.DeployView >> dispatch)
+    | Some (AdministrationView(m)) -> 
+        AdministrationSection.view m ( PortalMsg.AdminView >> dispatch)
     | _ -> []  
-
-
-// let view (model : Model) dispatch =
-//     div []
-//         [ Navbar.navbar [ Navbar.Color IsPrimary ]
-//             [ Navbar.Item.div [ ]
-//                 [ Heading.h2 [ ]
-//                     [ str "SAFE Template" ] ] ]
-          
-//           Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Left) ] ]
-//             [ 
-//                 Heading.h3 [] [ str ("Portal: ") ] 
-//             ] 
-
-//           Columns.columns []
-//             [ 
-//                 Column.column [] [ button "deployment" (fun _ -> dispatch ShowDeployment) ]
-//             ] 
-          
-//           Content.content [] <| showPortal model dispatch 
-
-//           Footer.footer [ ]
-//                 [ Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ] ]
-//                     [ Content.content []safeComponents ] ] ]
-
 
 let view (model : Model) dispatch =
         div [] [
-            Navbar.navbar [ Navbar.Color IsPrimary ]
+            Navbar.navbar 
+                [ 
+                    // Navbar.Color IsPrimary 
+                ]
                 [ Navbar.Item.div [ ]
-                    [ Heading.h2 [ ] [ str "Living Stone" ] 
-                      span [] [ str "deployment tooling" ] ]  
+                    [ 
+                        //Heading.h2 [ ] [ str "Living Stone" ] 
+                        span [] [ str "deployment tooling" ] 
+                    ]  
                 ]
 
             Columns.columns [ ]
@@ -130,10 +112,10 @@ let view (model : Model) dispatch =
                     ]
                 ]
 
-            Footer.footer [ ]
-                [ Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ] ]
-                    [ Content.content [] safeComponents ] 
-                ] 
+            // Footer.footer [ ]
+            //     [ Content.content [ Content.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered) ] ]
+            //         [ Content.content [] safeComponents ] 
+            //     ] 
         ]
 
 #if DEBUG
